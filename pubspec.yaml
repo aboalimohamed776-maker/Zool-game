@@ -1,0 +1,13 @@
+name: zool_game
+description: Zool - Sudanese boy adventure game
+publish_to: 'none'
+version: 1.0.0+1
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  flame: ^1.17.0
+  audioplayers: ^6.0.0
+flutter:
+  uses-material-design: true
