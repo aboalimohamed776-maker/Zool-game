@@ -10,16 +10,16 @@ jobs:
         with:
           flutter-version: '3.22.0'
           
-      - name: Setup Android
+      - name: Setup Android folder
         run: |
           mv lib/main.dart /tmp/main.dart.bak
+          mv pubspec.yaml /tmp/pubspec.yaml.bak
           flutter create . --org com.zoolfast --project-name zool_game --platforms=android
           mv /tmp/main.dart.bak lib/main.dart
+          mv /tmp/pubspec.yaml.bak pubspec.yaml
           
       - run: flutter pub get
-      
       - run: flutter build apk --release
-      
       - uses: actions/upload-artifact@v4
         with:
           name: zool-apk
