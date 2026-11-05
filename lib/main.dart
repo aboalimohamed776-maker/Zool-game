@@ -9,21 +9,29 @@ void main() {
 }
 
 class ZoolGame extends FlameGame with TapCallbacks {
-  late Player player;
+  late SpriteComponent player;
   late TextComponent scoreText;
   double groundY = 0;
   double score = 0;
   double timer = 0;
   bool gameOver = false;
+  double playerVel = 0;
   final rand = Random();
 
   @override
   Future<void> onLoad() async {
-    groundY = size.y - 80;
-    add(RectangleComponent(size: size, paint: Paint()..color = const Color(0xFFff9a3c)));
-    add(RectangleComponent(position: Vector2(0, groundY), size: Vector2(size.x, 80), paint: Paint()..color = const Color(0xFF8d5524)));
-    player = Player(position: Vector2(70, groundY - 50));
+    groundY = size.y - 90;
+    await images.load('zool_boy.png');
+    await images.load('croc.png');
+    
+    add(RectangleComponent(size: size, paint: Paint()..color = const Color(0xFFFF9A3C)));
+    add(RectangleComponent(position: Vector2(size.x - 110, 45), size: Vector2(75, 75), paint: Paint()..color = const Color(0xFFFFEB3B)));
+    add(RectangleComponent(position: Vector2(0, groundY-10), size: Vector2(size.x, 10), paint: Paint()..color = const Color(0xFF4FC3F7)));
+    add(RectangleComponent(position: Vector2(0, groundY), size: Vector2(size.x, 90), paint: Paint()..color = const Color(0xFF8D5524)));
+
+    player = SpriteComponent(sprite: Sprite(images.fromCache('zool_boy.png')), size: Vector2(68, 68), position: Vector2(55, groundY-68));
     add(player);
+    
     scoreText = TextComponent(text: '0', position: Vector2(size.x/2, 40), anchor: Anchor.center, textRenderer: TextPaint(style: const TextStyle(fontSize: 32, color: Colors.white, fontWeight: FontWeight.bold)));
     add(scoreText);
   }
@@ -31,12 +39,12 @@ class ZoolGame extends FlameGame with TapCallbacks {
   @override
   void onTapDown(TapDownEvent event) {
     if (gameOver) {
-      gameOver = false; score = 0; timer = 0;
+      gameOver = false; score = 0; timer = 0; playerVel = 0;
       children.whereType<Croc>().forEach((e) => e.removeFromParent());
-      player.position = Vector2(70, groundY - 50); player.vel = 0;
+      player.position = Vector2(55, groundY-68);
       scoreText.text = '0';
     } else {
-      player.jump();
+      if (player.position.y >= groundY-68) playerVel = -480;
     }
   }
 
@@ -44,47 +52,30 @@ class ZoolGame extends FlameGame with TapCallbacks {
   void update(double dt) {
     super.update(dt);
     if (gameOver) return;
-    score += dt * 10;
+    playerVel += 1000 * dt;
+    player.position.y += playerVel * dt;
+    if (player.position.y > groundY-68) { player.position.y = groundY-68; playerVel = 0; }
+    
+    score += dt * 15;
     scoreText.text = score.toInt().toString();
     timer += dt;
-    if (timer > 1.6) {
+    if (timer > 1.4 + rand.nextDouble()) {
       timer = 0;
-      add(Croc(position: Vector2(size.x + 40, groundY - 30)));
+      add(Croc(sprite: Sprite(images.fromCache('croc.png')), position: Vector2(size.x+60, groundY-42)));
     }
     for (final c in children.whereType<Croc>()) {
-      if (player.position.x < c.position.x + 50 && player.position.x + 40 > c.position.x && player.position.y + 40 > groundY - 30) {
+      if (player.toRect().deflate(12).overlaps(c.toRect().deflate(8)) && player.position.y > groundY-75) {
         gameOver = true;
-        scoreText.text = 'Game Over ${score.toInt()}\nTap Retry';
+        scoreText.text = 'Game Over ${score.toInt()}\nTap';
       }
-      if (c.position.x < -60) c.removeFromParent();
+      if (c.position.x < -80) c.removeFromParent();
     }
   }
 }
 
-class Player extends PositionComponent {
-  double vel = 0;
-  Player({required Vector2 position}) : super(position: position, size: Vector2(40, 40));
+class Croc extends SpriteComponent {
+  Croc({required Sprite sprite, required Vector2 position}) : super(sprite: sprite, position: position, size: Vector2(70, 38));
   @override
-  void render(Canvas canvas) {
-    canvas.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(0, 0, 40, 40), const Radius.circular(8)), Paint()..color = Colors.white);
-    canvas.drawCircle(const Offset(20, 8), 10, Paint()..color = const Color(0xFFd2a679));
-  }
-  void jump() { if (position.y >= (parent as ZoolGame).groundY - 50) vel = -400; }
-  @override
-  void update(double dt) {
-    vel += 900 * dt;
-    position.y += vel * dt;
-    final g = (parent as ZoolGame).groundY;
-    if (position.y > g - 50) { position.y = g - 50; vel = 0; }
-  }
-}
-
-class Croc extends PositionComponent {
-  Croc({required Vector2 position}) : super(position: position, size: Vector2(50, 30));
-  @override
-  void render(Canvas canvas) {
-    canvas.drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(0, 0, 50, 25), const Radius.circular(6)), Paint()..color = const Color(0xFF2d7d46));
-  }
-  @override
-  void update(double dt) { position.x -= 250 * dt; }
+  void update(double dt) { position.x -= 280 * dt; }
+  Rect toRect() => Rect.fromLTWH(position.x, position.y, size.x, size.y);
 }
